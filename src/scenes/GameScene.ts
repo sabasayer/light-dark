@@ -1,20 +1,22 @@
-import Phaser from 'phaser';
+import Phaser from "phaser";
+import RexUIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
 
 export default class GameScene extends Phaser.Scene {
-    constructor() {
-        super({ key: 'GameScene' });
-    }
+  rexUI: RexUIPlugin;
 
-    preload() {
-        // Load assets here
-    }
+  constructor() {
+    super({ key: "GameScene" });
+  }
 
-    create() {
-        // Create game objects here
-        this.add.text(400, 300, 'Hello Phaser!', { fontSize: '32px', color: '#fff' }).setOrigin(0.5);
-    }
+  preload() {
+    // Load assets here
+  }
 
-    update() {
-        // Game logic update loop
-    }
-} 
+  create() {
+    this.scene.start("MenuScene");
+  }
+
+  update() {
+    // Game logic update loop
+  }
+}
