@@ -14,7 +14,7 @@ interface BoardOptions {
 
 export class Board extends Phaser.GameObjects.Container {
   private options: BoardOptions;
-
+  private cells: Phaser.GameObjects.Rectangle[] = [];
   constructor(scene: Phaser.Scene, options: BoardOptions) {
     super(scene, options.x, options.y); // Pass scene, x, y to Container constructor
     this.options = options;
@@ -76,10 +76,9 @@ export class Board extends Phaser.GameObjects.Container {
         cell.setOrigin(0, 0); // Set origin for consistency
         // Add the cell graphics to this container
         this.add(cell);
+        this.cells.push(cell);
         cell.setPipeline("Light2D");
       }
     }
   }
-
-  // getX and getY are no longer needed as positioning is relative to the container
 }

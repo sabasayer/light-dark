@@ -28,4 +28,7 @@ export const COLORS = {
   BASIC_GREEN: 0x00ff00,
   BASIC_BLUE: 0x0000ff,
   BASIC_ORANGE: 0xffa500,
+
+  DEBUG_STROKE_COLOR: 0x00ff00, // Using bright green
+  DEBUG_FILL_COLOR: 0x228b22, // Using forest green
 } as const;

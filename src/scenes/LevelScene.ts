@@ -7,15 +7,16 @@ export default class LevelScene extends Phaser.Scene {
   }
 
   create() {
-    console.log(this.game.config.width, this.game.config.height);
-    this.add.rectangle(
-      Number(this.game.config.width) / 2,
-      Number(this.game.config.height) / 2,
-      Number(this.game.config.width),
-      Number(this.game.config.height),
-      COLORS.DARK_PRIMARY,
-      1,
-    );
+    this.add
+      .rectangle(
+        0,
+        0,
+        Number(this.game.config.width),
+        Number(this.game.config.height),
+        COLORS.DARK_PRIMARY,
+        1,
+      )
+      .setOrigin(0, 0);
     this.lights.setAmbientColor(COLORS.BASIC_ORANGE);
     saveGame(this.scene.key);
   }
