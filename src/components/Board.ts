@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 
-interface BoardOptions {
+export interface BoardOptions {
   x: number;
   y: number;
   width: number;
