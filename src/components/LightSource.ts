@@ -36,7 +36,11 @@ export class LightSource extends Phaser.GameObjects.Container {
     // Optionally, add a visual representation to the container itself
     // e.g., a small circle sprite
     const visual = scene.add.circle(0, 0, 5, options.color, 0.8);
+    const visual2 = scene.add.circle(0, 0, 7, options.color, 0.4);
+    const visual3 = scene.add.circle(0, 0, 9, options.color, 0.2);
     this.add(visual); // Add visual to the container
+    this.add(visual2); // Add visual to the container
+    this.add(visual3); // Add visual to the container
   }
 
   // Override setPosition to update the light's position when the container moves

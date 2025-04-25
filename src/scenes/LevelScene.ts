@@ -1,5 +1,6 @@
 import { Board, BoardOptions } from "../components/Board";
 import { LightSource, LightSourceOptions } from "../components/LightSource";
+import { Player, PlayerConfig } from "../components/Player";
 import {
   AMBIENT_LIGHT_COLOR,
   AMBIENT_LIGHT_ENABLED,
@@ -8,9 +9,9 @@ import {
   LEVEL_BOARD_OPTIONS,
 } from "../constants/level-constants";
 import { COLORS } from "../utils/color-utils";
-import { debounce } from "../utils/debounce";
 import { isDebug } from "../utils/debug-utils";
 import { saveGame } from "../utils/save-game-utils";
+import { loadSpriteSheet } from "../utils/sprite-utils";
 
 export interface ObstacleOptions {
   x: number;
@@ -25,6 +26,7 @@ export interface LevelSceneOptions extends Phaser.Types.Scenes.SettingsConfig {
   boardOptions: Pick<BoardOptions, "rows" | "columns">;
   lightSources: LightSourceOptions[];
   obstacles: ObstacleOptions[];
+  playerConfig: PlayerConfig;
 }
 
 export default class LevelScene extends Phaser.Scene {
@@ -36,10 +38,14 @@ export default class LevelScene extends Phaser.Scene {
   private darkOverlay: Phaser.GameObjects.Rectangle;
   private options: LevelSceneOptions;
   private percentageText: Phaser.GameObjects.Text;
-
+  private player: Player;
   constructor(config: LevelSceneOptions) {
     super(config);
     this.options = config;
+  }
+
+  preload() {
+    loadSpriteSheet(this);
   }
 
   create() {
@@ -54,6 +60,8 @@ export default class LevelScene extends Phaser.Scene {
     this.createBoard();
     this.createLightSource();
     this.createObstacles();
+    this.createPlayer();
+
     this.createMask();
     this.createRays();
     this.mouseHandler();
@@ -62,6 +70,12 @@ export default class LevelScene extends Phaser.Scene {
     }
 
     this.createPercentageText();
+  }
+
+  createPlayer() {
+    const player = new Player(this, this.options.playerConfig);
+    this.player = player;
+    this.board.add(this.player);
   }
 
   createPercentageText() {
@@ -90,7 +104,6 @@ export default class LevelScene extends Phaser.Scene {
     });
 
     this.input.on("dragend", () => {
-      console.log("drop");
       this.updatePercentageText();
     });
   }
@@ -143,6 +156,8 @@ export default class LevelScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setDepth(10);
 
+    this.darkOverlay.setPipeline("Light2D");
+
     this.graphics = this.make.graphics({
       lineStyle: { color: COLORS.DEBUG_STROKE_COLOR, width: 0.5 },
     });
@@ -168,10 +183,21 @@ export default class LevelScene extends Phaser.Scene {
     );
   }
 
+  getPlayerBounds() {
+    const { displayWidth, displayHeight } = this.player;
+
+    return new Phaser.Geom.Rectangle(
+      this.player.x + this.board.x,
+      this.player.y + this.board.y,
+      displayWidth,
+      displayHeight,
+    );
+  }
   createRays() {
     const rects = [
       ...this.obstacles.map((obstacle) => this.getRectangle(obstacle)),
       this.getBoardBounds(),
+      this.getPlayerBounds(),
     ];
 
     const edges = rects.flatMap((rect) => this.getRectEdges(rect));
@@ -200,6 +226,8 @@ export default class LevelScene extends Phaser.Scene {
   update(time: number, delta: number) {
     super.update(time, delta);
     //this.updatePercentageText();
+    this.player.update(time, delta);
+    this.createRays();
   }
 
   getRectangle(obstacle: Phaser.GameObjects.Rectangle) {

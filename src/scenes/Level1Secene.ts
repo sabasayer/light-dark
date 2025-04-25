@@ -6,12 +6,16 @@ export default class Level1Scene extends LevelScene {
       key: "Level1Scene",
       levelNumber: 1,
       boardOptions: { rows: 6, columns: 8 },
+      playerConfig: {
+        x: 100,
+        y: 100,
+      },
       lightSources: [
         {
           x: 400,
           y: 350,
           radius: 1000,
-          color: COLORS.BASIC_WHITE,
+          color: COLORS.BASIC_ORANGE,
           intensity: 10,
         },
         {

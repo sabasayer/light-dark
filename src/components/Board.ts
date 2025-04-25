@@ -112,4 +112,10 @@ export class Board extends Phaser.GameObjects.Container {
     });
     return Math.round((darkCells / totalCells) * 100);
   }
+
+  destroy(fromScene?: boolean) {
+    this.cells.forEach((cell) => cell.destroy());
+    this.cellCenters.forEach((cellCenter) => cellCenter.destroy());
+    super.destroy(fromScene);
+  }
 }

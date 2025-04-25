@@ -3,6 +3,7 @@ import GameScene from "./scenes/GameScene";
 import RexUIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
 import MenuScene from "./scenes/MenuScene";
 import Level1Scene from "./scenes/Level1Secene";
+
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   width: 1200,
