@@ -14,6 +14,13 @@ export default class Level1Scene extends LevelScene {
           color: COLORS.BASIC_WHITE,
           intensity: 10,
         },
+        {
+          x: 600,
+          y: 550,
+          radius: 1000,
+          color: COLORS.BASIC_WHITE,
+          intensity: 10,
+        },
       ],
       obstacles: [
         { x: 310, y: 370, width: 50, height: 50, color: COLORS.BASIC_RED },

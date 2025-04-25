@@ -8,6 +8,7 @@ import {
   LEVEL_BOARD_OPTIONS,
 } from "../constants/level-constants";
 import { COLORS } from "../utils/color-utils";
+import { debounce } from "../utils/debounce";
 import { isDebug } from "../utils/debug-utils";
 import { saveGame } from "../utils/save-game-utils";
 
@@ -34,6 +35,7 @@ export default class LevelScene extends Phaser.Scene {
   private board: Board;
   private darkOverlay: Phaser.GameObjects.Rectangle;
   private options: LevelSceneOptions;
+  private percentageText: Phaser.GameObjects.Text;
 
   constructor(config: LevelSceneOptions) {
     super(config);
@@ -54,10 +56,43 @@ export default class LevelScene extends Phaser.Scene {
     this.createObstacles();
     this.createMask();
     this.createRays();
-
+    this.mouseHandler();
     if (AMBIENT_LIGHT_ENABLED) {
       this.lights.setAmbientColor(AMBIENT_LIGHT_COLOR);
     }
+
+    this.createPercentageText();
+  }
+
+  createPercentageText() {
+    this.percentageText = this.add.text(
+      400,
+      30,
+      `Dark Light Percentage: ${this.getDarkLightPercentage()}%`,
+      {
+        fontSize: "32px",
+        color: "#fff",
+      },
+    );
+  }
+
+  updatePercentageText() {
+    this.percentageText.setText(
+      `Dark Light Percentage: ${this.getDarkLightPercentage()}%`,
+    );
+  }
+
+  mouseHandler() {
+    this.input.on("drag", (pointer, gameObject, dragX, dragY) => {
+      gameObject.setPosition(dragX, dragY);
+
+      this.createRays();
+    });
+
+    this.input.on("dragend", () => {
+      console.log("drop");
+      this.updatePercentageText();
+    });
   }
 
   createBoard() {
@@ -87,7 +122,9 @@ export default class LevelScene extends Phaser.Scene {
           obstacle.height,
           obstacle.color,
         )
-        .setOrigin(0, 0);
+        .setOrigin(0, 0)
+        .setInteractive({ draggable: true });
+
       obj.setPipeline("Light2D");
       this.obstacles.push(obj);
     });
@@ -142,21 +179,27 @@ export default class LevelScene extends Phaser.Scene {
 
     const rays = vertices.map(() => new Phaser.Geom.Line());
 
-    const lightSource = this.lightSources[0];
+    this.graphics.clear();
+    this.graphics.fillStyle(COLORS.DEBUG_FILL_COLOR);
 
-    let intersectingRays = this.calculateIntersectingRays(
-      lightSource,
-      vertices,
-      edges,
-      rays,
-    );
-    intersectingRays = this.sortClockwise(intersectingRays, lightSource);
-    console.log(intersectingRays);
-    this.drawRays(intersectingRays, rays, edges);
+    this.lightSources.forEach((lightSource) => {
+      let intersectingRayPoints = this.calculateIntersectingRayPoints(
+        lightSource,
+        vertices,
+        edges,
+        rays,
+      );
+      intersectingRayPoints = this.sortClockwise(
+        intersectingRayPoints,
+        lightSource,
+      );
+      this.drawRays(intersectingRayPoints, rays, edges);
+    });
   }
 
   update(time: number, delta: number) {
     super.update(time, delta);
+    //this.updatePercentageText();
   }
 
   getRectangle(obstacle: Phaser.GameObjects.Rectangle) {
@@ -203,8 +246,6 @@ export default class LevelScene extends Phaser.Scene {
     rays: Phaser.Geom.Line[],
     edges: Phaser.Geom.Line[],
   ) {
-    this.graphics.clear();
-    this.graphics.fillStyle(COLORS.DEBUG_FILL_COLOR);
     this.graphics.fillPoints(vertices, true);
 
     if (isDebug()) {
@@ -224,7 +265,7 @@ export default class LevelScene extends Phaser.Scene {
     }
   }
 
-  calculateIntersectingRays(
+  calculateIntersectingRayPoints(
     source: LightSource,
     vertices: Phaser.Geom.Point[],
     edges: Phaser.Geom.Line[],
@@ -233,9 +274,7 @@ export default class LevelScene extends Phaser.Scene {
     const sx = source.x;
     const sy = source.y;
     return rays.map((ray, i) => {
-      console.log(vertices[i].x, vertices[i].y);
       ray.setTo(sx, sy, vertices[i].x, vertices[i].y);
-      console.log(ray);
       Phaser.Geom.Line.Extend(ray, 0, this.rayExtensionValue);
 
       for (const edge of edges) {
@@ -287,7 +326,6 @@ export default class LevelScene extends Phaser.Scene {
   getRayToEdge(ray: Phaser.Geom.Line, edge: Phaser.Geom.Line) {
     const out = new Phaser.Geom.Point();
     if (Phaser.Geom.Intersects.LineToLine(ray, edge, out)) {
-      console.log({ out, edge, ray });
       ray.x2 = out.x;
       ray.y2 = out.y;
 
@@ -297,10 +335,49 @@ export default class LevelScene extends Phaser.Scene {
     return null;
   }
 
+  /**
+   * Returns true if the given world coordinates (x,y) are in shadow
+   * (i.e. not reached by any light source).
+   */
+  isInTheShadow(x: number, y: number): boolean {
+    // Build all obstacle + board rectangles
+    const rects = [
+      ...this.obstacles.map((o) => this.getRectangle(o)),
+      this.getBoardBounds(),
+    ];
+    const edges = rects.flatMap((r) => this.getRectEdges(r));
+    const vertices = rects.flatMap((r) => this.getRectVertices(r));
+
+    // For each light, cast rays & build its lit-area polygon
+    for (const source of this.lightSources) {
+      const rays = vertices.map(() => new Phaser.Geom.Line());
+      const litPoints = this.calculateIntersectingRayPoints(
+        source,
+        vertices,
+        edges,
+        rays,
+      );
+      const sorted = this.sortClockwise(litPoints, source);
+      const poly = new Phaser.Geom.Polygon(sorted);
+
+      // If our point is inside this light’s polygon, it’s lit
+      if (Phaser.Geom.Polygon.Contains(poly, x, y)) {
+        return false;
+      }
+    }
+
+    // No light reached it → in shadow
+    return true;
+  }
+
   get rayExtensionValue() {
     return Math.sqrt(
       this.board.getBounds().width * this.board.getBounds().width +
         this.board.getBounds().height * this.board.getBounds().height,
     );
+  }
+
+  getDarkLightPercentage() {
+    return this.board.getDarkLightPercentage();
   }
 }

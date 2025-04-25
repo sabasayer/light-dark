@@ -1,4 +1,6 @@
 import Phaser from "phaser";
+import LevelScene from "../scenes/LevelScene";
+import { COLORS } from "../utils/color-utils";
 
 export interface BoardOptions {
   x: number;
@@ -15,7 +17,8 @@ export interface BoardOptions {
 export class Board extends Phaser.GameObjects.Container {
   private options: BoardOptions;
   private cells: Phaser.GameObjects.Rectangle[] = [];
-  constructor(scene: Phaser.Scene, options: BoardOptions) {
+  private cellCenters: Phaser.GameObjects.Arc[] = [];
+  constructor(scene: LevelScene, options: BoardOptions) {
     super(scene, options.x, options.y); // Pass scene, x, y to Container constructor
     this.options = options;
 
@@ -73,12 +76,40 @@ export class Board extends Phaser.GameObjects.Container {
           this.options.cellColor,
           1,
         );
+
+        const cellCenter = this.scene.add.circle(
+          x + cellWidth / 2,
+          y + cellHeight / 2,
+          2,
+          COLORS.DEBUG_FILL_COLOR,
+          1,
+        );
+
         cell.setOrigin(0, 0); // Set origin for consistency
         // Add the cell graphics to this container
         this.add(cell);
+        this.add(cellCenter);
         this.cells.push(cell);
+        this.cellCenters.push(cellCenter);
         cell.setPipeline("Light2D");
       }
     }
+  }
+
+  getDarkLightPercentage() {
+    const totalCells = this.cellCenters.length;
+    let darkCells = 0;
+    console.log({ totalCells });
+    this.cellCenters.forEach((cellCenter) => {
+      const isInShadow = (this.scene as LevelScene).isInTheShadow(
+        cellCenter.x + this.x,
+        cellCenter.y + this.y,
+      );
+      if (isInShadow) {
+        console.log("darkCell", cellCenter.x, cellCenter.y);
+        darkCells++;
+      }
+    });
+    return Math.round((darkCells / totalCells) * 100);
   }
 }
