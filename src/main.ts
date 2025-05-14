@@ -3,6 +3,8 @@ import GameScene from "./scenes/GameScene";
 import RexUIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
 import MenuScene from "./scenes/MenuScene";
 import Level1Scene from "./scenes/Level1Secene";
+import Level2Scene from "./scenes/Level2Secene";
+import EndGameScene from "./scenes/EndGameScene";
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -16,7 +18,7 @@ const config: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [GameScene, MenuScene, Level1Scene], // Add your scenes here
+  scene: [GameScene, MenuScene, Level1Scene, Level2Scene, EndGameScene], // Add your scenes here
   plugins: {
     scene: [
       {

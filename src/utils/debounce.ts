@@ -1,7 +1,12 @@
-export const debounce = (func: () => void, delay: number) => {
-  let timeout: number | undefined;
-  return function (...args: any[]) {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(this, args), delay);
+export const debounce = (func: () => void, timeout = 300) => {
+  let timer: number | undefined;
+  console.log("debounce");
+  return (...args: any[]) => {
+    clearTimeout(timer);
+    console.log("debounce clearTimeout");
+    timer = setTimeout(() => {
+      console.log("debounce timeout");
+      func.apply(this, args);
+    }, timeout);
   };
 };

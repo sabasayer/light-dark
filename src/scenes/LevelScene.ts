@@ -12,6 +12,7 @@ import { COLORS } from "../utils/color-utils";
 import { isDebug } from "../utils/debug-utils";
 import { saveGame } from "../utils/save-game-utils";
 import { loadSpriteSheet } from "../utils/sprite-utils";
+import { END_GAME_SCENE_KEY } from "./EndGameScene";
 
 export interface ObstacleOptions {
   x: number;
@@ -27,6 +28,8 @@ export interface LevelSceneOptions extends Phaser.Types.Scenes.SettingsConfig {
   lightSources: LightSourceOptions[];
   obstacles: ObstacleOptions[];
   playerConfig: PlayerConfig;
+  nextLevelScene?: string;
+  isLastLevel?: boolean;
 }
 
 export default class LevelScene extends Phaser.Scene {
@@ -38,7 +41,10 @@ export default class LevelScene extends Phaser.Scene {
   private darkOverlay: Phaser.GameObjects.Rectangle;
   private options: LevelSceneOptions;
   private percentageText: Phaser.GameObjects.Text;
+  private intersectingRayPoints: Phaser.Math.Vector2[] = [];
   private player: Player;
+  private percentage: number;
+
   constructor(config: LevelSceneOptions) {
     super(config);
     this.options = config;
@@ -82,7 +88,7 @@ export default class LevelScene extends Phaser.Scene {
     this.percentageText = this.add.text(
       400,
       30,
-      `Dark Light Percentage: ${this.getDarkLightPercentage()}%`,
+      this.darkLightPercentageText(),
       {
         fontSize: "32px",
         color: "#fff",
@@ -91,9 +97,12 @@ export default class LevelScene extends Phaser.Scene {
   }
 
   updatePercentageText() {
-    this.percentageText.setText(
-      `Dark Light Percentage: ${this.getDarkLightPercentage()}%`,
-    );
+    this.percentageText?.setText(this.darkLightPercentageText());
+  }
+
+  darkLightPercentageText() {
+    const value = this.percentage;
+    return `Dark/Light: ${value}/${100 - value}`;
   }
 
   mouseHandler() {
@@ -140,6 +149,7 @@ export default class LevelScene extends Phaser.Scene {
 
       obj.setPipeline("Light2D");
       this.obstacles.push(obj);
+      this.physics.world.enable(obj);
     });
   }
 
@@ -193,6 +203,7 @@ export default class LevelScene extends Phaser.Scene {
       displayHeight,
     );
   }
+
   createRays() {
     const rects = [
       ...this.obstacles.map((obstacle) => this.getRectangle(obstacle)),
@@ -219,13 +230,17 @@ export default class LevelScene extends Phaser.Scene {
         intersectingRayPoints,
         lightSource,
       );
+
+      this.intersectingRayPoints = intersectingRayPoints;
       this.drawRays(intersectingRayPoints, rays, edges);
     });
+    this.calculateDarkLightPercentage();
+    this.updatePercentageText();
+    this.checkLevelComplete();
   }
 
   update(time: number, delta: number) {
     super.update(time, delta);
-    //this.updatePercentageText();
     this.player.update(time, delta);
     this.createRays();
   }
@@ -405,7 +420,22 @@ export default class LevelScene extends Phaser.Scene {
     );
   }
 
-  getDarkLightPercentage() {
-    return this.board.getDarkLightPercentage();
+  calculateDarkLightPercentage() {
+    const polygon = new Phaser.Geom.Polygon(this.intersectingRayPoints);
+    const area = polygon.calculateArea();
+    const totalArea =
+      this.board.getBounds().width * this.board.getBounds().height;
+    this.percentage = 100 - Math.round((area / totalArea) * 100);
+  }
+
+  checkLevelComplete() {
+    const percentage = this.percentage;
+    if (percentage >= 48 && percentage <= 52) {
+      if (this.options.isLastLevel) {
+        this.scene.start(END_GAME_SCENE_KEY);
+      } else {
+        this.scene.start(this.options.nextLevelScene);
+      }
+    }
   }
 }

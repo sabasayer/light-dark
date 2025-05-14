@@ -1,10 +1,11 @@
 import Phaser from "phaser";
 import LevelScene from "../scenes/LevelScene";
-import { debounce } from "../utils/debounce";
 
 export interface PlayerConfig {
   x: number;
   y: number;
+  width: number;
+  height: number;
   speed?: number;
 }
 
@@ -12,6 +13,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private keyboard?: Phaser.Input.Keyboard.KeyboardPlugin;
   private gamepad?: Phaser.Input.Gamepad.Gamepad;
   private speed: number;
+  private lastTime: number = 0;
 
   constructor(scene: Phaser.Scene, config: PlayerConfig) {
     super(scene, config.x, config.y, "sprite", "player-01.png");
@@ -24,7 +26,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setPipeline("Light2D");
     this.setFrame("player-01.png");
     this.setOrigin(0, 0);
-    this.setScale(0.5);
+    this.setScale(config.width / this.width, config.height / this.height);
   }
 
   handleKeyboard() {
@@ -41,11 +43,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   update(time: number, delta: number) {
     super.update(time, delta);
-    this.handleKeyboardInput();
-    this.handleGamepadInput();
+    this.handleKeyboardInput(time);
+    this.handleGamepadInput(time);
   }
 
-  handleKeyboardInput() {
+  handleKeyboardInput(time: number) {
     if (!this.keyboard) return;
 
     const cursors = this.keyboard.createCursorKeys();
@@ -59,10 +61,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (cursors.down.isDown) body.setVelocityY(this.speed);
 
     body.velocity.normalize().scale(this.speed);
-    this.updatePercentageText();
+    this.updatePercentageText(time);
   }
 
-  handleGamepadInput() {
+  handleGamepadInput(delta: number) {
     if (!this.gamepad) return;
 
     const body = this.body as Phaser.Physics.Arcade.Body;
@@ -74,15 +76,19 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.gamepad.leftStick.y > 0.1) body.setVelocityY(this.speed);
 
     body.velocity.normalize().scale(this.speed);
-    this.updatePercentageText();
+    this.updatePercentageText(delta);
   }
 
-  updatePercentageText() {
+  updatePercentageText(time: number) {
     const body = this.body as Phaser.Physics.Arcade.Body;
-    if (body.velocity.length() > 0) {
-      debounce(() => {
-        (this.scene as LevelScene).updatePercentageText();
-      }, 100);
+
+    if (
+      body.velocity.length() > 0 &&
+      time - this.lastTime > 100 &&
+      time - this.lastTime < 200
+    ) {
+      (this.scene as LevelScene).updatePercentageText();
     }
+    this.lastTime = time;
   }
 }

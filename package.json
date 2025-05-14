@@ -13,8 +13,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "martinez-polygon-clipping": "^0.7.4",
     "phaser": "^3.88.2",
-    "phaser3-rex-plugins": "^1.80.15"
+    "phaser3-rex-plugins": "^1.80.15",
+    "polygon-clipping": "^0.15.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.24.0",
